@@ -153,8 +153,15 @@
 <h2>1''. 当日差枚(前回AT終了時)</h2>
 <div class="card">
   <div class="row">
-    <div class="fld"><label>前回AT終了時の当日差枚(枚)</label>
-      <input type="number" id="diffM" placeholder="例: 1500" step="10" style="width:8em"></div>
+    <div class="fld"><label>前回AT終了時の当日差枚</label>
+      <select id="diffM">
+        <option value="">考慮しない</option>
+        <option value="0">〜+750枚</option>
+        <option value="1">+750〜1250枚</option>
+        <option value="2">+1250〜2000枚</option>
+        <option value="3">+2000〜2400枚</option>
+        <option value="4">+2400枚〜</option>
+      </select></div>
     <span class="ref" style="align-self:center" id="diffInfo"></span>
   </div>
   <div class="note">その台の<b>当日の差枚(朝イチからの累計)</b>を、前回のAT(連チャン)が終わった時点の値で入力します。データ表示の差枚グラフの値をそのまま使ってください。
@@ -599,19 +606,18 @@ function run(doScroll) {
   setCurve(segKey());
   // 差枚帯のTY倍率(差枚考慮版)
   const diffRaw = document.getElementById('diffM').value;
-  const diffM = diffRaw === '' ? NaN : +diffRaw;
+  const diffSel = diffRaw === '' ? -1 : +diffRaw;
   let diffBand = -1, diffKey = null, diffN = 0;
   DIFF_MULT = 1;
-  if (Number.isFinite(diffM) && segKey() !== 'asaichi') {
-    const e = D.diff.edges;
-    diffBand = e.findIndex((lo, i) => (lo == null || diffM >= lo) && (e[i + 1] == null || diffM < e[i + 1]));
+  if (diffSel >= 0 && segKey() !== 'asaichi') {
+    diffBand = diffSel;
     diffKey = D.diff.by_seg[segKey()] ? segKey() : 'all';
     const bs = D.diff.by_seg[diffKey];
     DIFF_MULT = bs.all[diffBand]; diffN = bs.n_all[diffBand];
   }
   document.getElementById('diffInfo').textContent = diffBand >= 0
     ? `帯 ${D.diff.labels[diffBand]} → RUSH_TY ×${DIFF_MULT.toFixed(3)}(この状況の標本 ${diffN.toLocaleString()} 塊)`
-    : (Number.isFinite(diffM) ? '朝イチの状況では差枚を使いません' : '');
+    : (diffSel >= 0 ? '朝イチの状況では差枚を使いません' : '');
   document.getElementById('segInfo').textContent =
     CURVE.n != null ? `この状況の解析サンプル: ${CURVE.n.toLocaleString()} 件` : '';
   const cur = buildCurves(baseKey, shortfall);
@@ -795,7 +801,7 @@ function run(doScroll) {
       + `その${EX}Gは投資として計上しています。サンプル数は着席G+${EX}に到達した数です。0にすると除外なし。<br>`
     : '';
   const diffNote = diffBand >= 0
-    ? `<b>当日差枚 ${diffM.toLocaleString()}枚(帯 ${D.diff.labels[diffBand]})</b>: この状況で同じ帯から始まった塊の平均TYは全体の ×${DIFF_MULT.toFixed(3)}(標本 ${diffN.toLocaleString()} 塊${diffN < D.diff.min_n ? '、標本不足のため倍率1.0' : ''})。RUSH_TY にだけ掛けています。<br>`
+    ? `<b>当日差枚 ${D.diff.labels[diffBand]}</b>: この状況で同じ帯から始まった塊の平均TYは全体の ×${DIFF_MULT.toFixed(3)}(標本 ${diffN.toLocaleString()} 塊${diffN < D.diff.min_n ? '、標本不足のため倍率1.0' : ''})。RUSH_TY にだけ掛けています。<br>`
     : '';
   document.getElementById('note4').innerHTML = diffNote + exNote + (rawMk
     ? `<b>生データ表示</b>: この状況の実測をそのまま評価した値です(設定配分・設定別の初当り/TY倍率・`
@@ -935,6 +941,9 @@ document.querySelectorAll('input[name=fixs]').forEach(r => r.addEventListener('c
   if (!document.getElementById('out').classList.contains('hide')) run(false);
 }));
 document.getElementById('exclG').addEventListener('change', () => {
+  if (!document.getElementById('out').classList.contains('hide')) run(false);
+});
+document.getElementById('diffM').addEventListener('change', () => {
   if (!document.getElementById('out').classList.contains('hide')) run(false);
 });
 
