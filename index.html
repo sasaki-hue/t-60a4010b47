@@ -150,24 +150,6 @@
     ホールデータ(1.)が無くてもここだけで推定できます(市場配分を事前分布に使用)。空欄なら従来どおり初当りだけで推定します。</div>
 </div>
 
-<h2>1''. 当日差枚(前回AT終了時)</h2>
-<div class="card">
-  <div class="row">
-    <div class="fld"><label>前回AT終了時の当日差枚</label>
-      <select id="diffM">
-        <option value="">考慮しない</option>
-        <option value="0">〜+750枚</option>
-        <option value="1">+750〜1250枚</option>
-        <option value="2">+1250〜2000枚</option>
-        <option value="3">+2000〜2400枚</option>
-        <option value="4">+2400枚〜</option>
-      </select></div>
-    <span class="ref" style="align-self:center" id="diffInfo"></span>
-  </div>
-  <div class="note">その台の<b>当日の差枚(朝イチからの累計)</b>を、前回のAT(連チャン)が終わった時点の値で入力します。データ表示の差枚グラフの値をそのまま使ってください。
-    空欄なら差枚を考慮しません。<b>朝イチ(前回ATなし)の状況では使いません。</b>
-    帯は 〜+750 / +750〜1250 / +1250〜2000 / +2000〜2400 / +2400〜 の5段階で、効果は当選時のRUSH_TYにだけ掛かります(初当り確率は差枚でほぼ変わらないため据え置き)。
-    +1250〜2000 が最も甘く、+2000を超えると有利区間が切れて恩恵を使い切っている可能性が高まり、元の水準に戻ります。</div>
 </div>
 
 <div id="out" class="hide">
@@ -221,6 +203,15 @@
           <option value="ppS">4連以上・赤7・天井</option>
           <option value="ppO">それ以外(1〜3連)</option>
         </select></div>
+      <div class="fld"><label>当日差枚(前回AT終了時)</label>
+        <select id="diffM">
+          <option value="">考慮しない</option>
+          <option value="0">〜+750枚</option>
+          <option value="1">+750〜1250枚</option>
+          <option value="2">+1250〜2000枚</option>
+          <option value="3">+2000〜2400枚</option>
+          <option value="4">+2400枚〜</option>
+        </select></div>
       <div class="fld"><label>設定の扱い</label>
         <div class="radios">
           <label><input type="radio" name="fixs" value="auto" checked>推定配分(自動)</label>
@@ -231,6 +222,7 @@
       <div class="fld"><label>着席直後の除外G</label>
         <input type="number" id="exclG" value="30" min="0" max="500" step="1" style="width:5em"></div>
       <span class="ref" id="segInfo" style="align-self:center"></span>
+      <span class="ref" id="diffInfo" style="align-self:center"></span>
     </div>
     <div class="scroll"><table id="tEV"></table></div>
     <div class="note" id="note4"></div>
