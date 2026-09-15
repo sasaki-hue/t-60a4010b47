@@ -99,7 +99,32 @@
 <h1>Lミリオンゴッド-神々の軌跡-　設定配分・期待値ツール <span style="font-size:.6em;color:var(--acc)">差枚考慮版</span></h1>
 <div class="meta" id="meta"></div>
 
-<h2>1. ホールデータを入力</h2>
+<h2>1. ベルナビ回数(この台で数えた値)</h2>
+<div class="card">
+  <div class="row">
+    <div class="fld"><label>初当選後の通常時G</label>
+      <input type="number" id="navG" placeholder="例: 800" min="0" step="1" style="width:7em"></div>
+    <div class="fld"><label>その間のナビ回数</label>
+      <input type="number" id="navK" placeholder="例: 3" min="0" step="1" style="width:5em"></div>
+    <div class="fld"><label>事前分布</label>
+      <select id="navPrior">
+        <option value="flat" selected>均等(ナビだけで判定)</option>
+        <option value="store">店の配分(3.)を使う</option>
+      </select></div>
+    <span class="ref" style="align-self:center" id="navInfo"></span>
+  </div>
+  <div class="note">通常時の<b>押し順ナビ</b>を全部数えます(プレミアの隠しナビも区別せずに含める)。
+    <b>リセット後〜初当選までの区間は必ず除外</b>(全設定共通で約1/76と濃く出るため誤判定源)。AT中も除外。
+    設定判別はこのベルナビ回数で行います(必須)。ホールデータ(1'.)は任意で、入れた場合は店の設定配分を事前分布に使えます。</div>
+</div>
+
+  <div class="row" style="border-top:1px dashed var(--border);padding-top:12px;margin-top:14px">
+    <div class="fld"><button id="run">計算する</button></div>
+    <span class="ref" style="align-self:center" id="coinNote"></span>
+  </div>
+</div>
+
+<h2>1'. ホールデータ(任意: 店の設定配分を事前分布に使う場合)</h2>
 <div class="card">
   <div class="tabs">
     <div class="tab on" data-mode="rows">台ごとに貼り付け(推奨)</div>
@@ -125,31 +150,6 @@
       台間の<b>ばらつき</b>なので、可能なら台ごとの行を貼り付けてください(推定精度が大きく変わります)。</div>
   </div>
 
-  <div class="row" style="border-top:1px dashed var(--border);padding-top:12px;margin-top:14px">
-    <div class="fld"><button id="run">計算する</button></div>
-    <span class="ref" style="align-self:center" id="coinNote"></span>
-  </div>
-</div>
-
-<h2>1'. ベルナビ回数(この台で数えた値)</h2>
-<div class="card">
-  <div class="row">
-    <div class="fld"><label>初当選後の通常時G</label>
-      <input type="number" id="navG" placeholder="例: 800" min="0" step="1" style="width:7em"></div>
-    <div class="fld"><label>その間のナビ回数</label>
-      <input type="number" id="navK" placeholder="例: 3" min="0" step="1" style="width:5em"></div>
-    <div class="fld"><label>事前分布</label>
-      <select id="navPrior">
-        <option value="store">店の配分(3.)を使う</option>
-        <option value="flat">均等(ナビだけで判定)</option>
-      </select></div>
-    <span class="ref" style="align-self:center" id="navInfo"></span>
-  </div>
-  <div class="note">通常時の<b>押し順ナビ</b>を全部数えます(プレミアの隠しナビも区別せずに含める)。
-    <b>リセット後〜初当選までの区間は必ず除外</b>(全設定共通で約1/76と濃く出るため誤判定源)。AT中も除外。
-    ホールデータ(1.)が無くてもここだけで推定できます(市場配分を事前分布に使用)。空欄なら従来どおり初当りだけで推定します。</div>
-</div>
-
 </div>
 
 <div id="out" class="hide">
@@ -160,7 +160,7 @@
     <div class="note" id="note1"></div>
   </div>
 
-  <h2>3. 推定設定配分</h2>
+  <h2>3. 店の設定配分(事前分布用)</h2>
   <div class="card">
     <div class="bar" id="bar"></div>
     <div class="leg" id="leg"></div>
@@ -170,7 +170,7 @@
   </div>
 
   <div id="secNavi" class="hide">
-  <h2>3'. ベルナビによるこの台の設定確率</h2>
+  <h2>3'. ベルナビによるこの台の設定確率(設定判別の本体)</h2>
   <div class="card">
     <div class="bar" id="barN"></div>
     <div class="leg" id="legN"></div>
@@ -210,7 +210,6 @@
           <option value="1">+750〜1250枚</option>
           <option value="2">+1250〜2000枚</option>
           <option value="3">+2000〜2400枚</option>
-          <option value="4">+2400枚〜</option>
         </select></div>
       <div class="fld"><label>設定の扱い</label>
         <div class="radios">
@@ -557,7 +556,7 @@ function run(doScroll) {
   const navGraw = document.getElementById('navG').value, navKraw = document.getElementById('navK').value;
   const navG = navGraw === '' ? NaN : +navGraw, navK = navKraw === '' ? NaN : +navKraw;
   const hasNavi = navG > 0 && navK >= 0 && Number.isFinite(navK);
-  if (!hasStore && !hasNavi) { alert('ホールデータ(総通常Gと初当り回数)か、ベルナビ(初当選後の通常時Gとナビ回数)のどちらかを入力してください'); return; }
+  if (!hasNavi) { alert('ベルナビ(初当選後の通常時G と ナビ回数)を入力してください。設定判別はベルナビで行います。'); return; }
 
   const baseKey = 'ladder'; // コイン持ちは実測ラダー(設1 30.8〜設6 34.1G、ナビに従う前提)
   const yen = 20;           // 円表示は20円/枚 固定
@@ -619,8 +618,8 @@ function run(doScroll) {
     document.getElementById('kpi1').innerHTML = '';
     document.getElementById('conf').innerHTML = '';
     document.getElementById('note1').innerHTML =
-      'ホールデータ未入力のため、店の設定配分は<b>市場全体の推定配分</b>をそのまま事前分布に使い、'
-      + 'ベルナビ回数だけでこの台の設定を推定します。';
+      'ホールデータは未入力です(任意)。店の設定配分としては<b>市場全体の推定配分</b>を表示しています。'
+      + 'この台の設定はベルナビ回数で推定します(事前分布が「店の配分」のときだけ、ここの配分が事前として使われます)。';
   } else {
   const diff = (lamHall / MK.lam_obs - 1) * 100;
   document.getElementById('kpi1').innerHTML = [
@@ -822,7 +821,7 @@ function run(doScroll) {
     標本の少ない設定ほど尤度がなだらかになります。朝イチ〜初当選の区間は全設定共通で約1/${D.navi.asaichi_den}と濃いため除外が前提です。<br><br>
     <b>①'' 当日差枚 → RUSH_TY の倍率(差枚考慮版)</b><br>
     当日の累積差枚(朝イチからの累計。解析では通常時を−1.62枚/Gで換算)を前回AT終了時点で評価し、
-    帯 ${D.diff.labels.join(' / ')} に分けて、状況ごとに「その帯から始まった塊のTY ÷ 状況全体のTY」を倍率として RUSH_TY に掛けます。
+    帯 ${D.diff.labels.slice(0, 4).join(' / ')} に分けて(+2400超は有利区間が切れて恩恵を使い切った可能性が高いため選択肢から外しています)、状況ごとに「その帯から始まった塊のTY ÷ 状況全体のTY」を倍率として RUSH_TY に掛けます。
     初当り確率は差枚でほぼ動かない(300G以内当選率で43〜47%の浅いU字)ため据え置きです。
     +1250〜2000 の帯が最も甘く(前回単発で ×1.13、赤7で ×1.20)、+2000を超えると有利区間が切れて恩恵(2ストック保証)を使い切っている可能性が高まり、倍率は1前後に戻ります。
     標本500塊未満の帯は倍率1.0です。<br><br>
