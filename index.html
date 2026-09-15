@@ -115,7 +115,7 @@
   </div>
   <div class="note">通常時の<b>押し順ナビ</b>を全部数えます(プレミアの隠しナビも区別せずに含める)。
     <b>リセット後〜初当選までの区間は必ず除外</b>(全設定共通で約1/76と濃く出るため誤判定源)。AT中も除外。
-    設定判別はこのベルナビ回数で行います(必須)。ホールデータ(1'.)は任意で、入れた場合は店の設定配分を事前分布に使えます。</div>
+    設定判別はこのベルナビ回数で行います。空欄でもそのまま計算でき、その場合はホールデータ(1'.)があれば店の配分、無ければ市場全体の配分で期待値を出します。</div>
 </div>
 
   <div class="row" style="border-top:1px dashed var(--border);padding-top:12px;margin-top:14px">
@@ -556,7 +556,7 @@ function run(doScroll) {
   const navGraw = document.getElementById('navG').value, navKraw = document.getElementById('navK').value;
   const navG = navGraw === '' ? NaN : +navGraw, navK = navKraw === '' ? NaN : +navKraw;
   const hasNavi = navG > 0 && navK >= 0 && Number.isFinite(navK);
-  if (!hasNavi) { alert('ベルナビ(初当選後の通常時G と ナビ回数)を入力してください。設定判別はベルナビで行います。'); return; }
+  // ベルナビもホールデータも無ければ市場配分のまま進める(入力は任意)
 
   const baseKey = 'ladder'; // コイン持ちは実測ラダー(設1 30.8〜設6 34.1G、ナビに従う前提)
   const yen = 20;           // 円表示は20円/枚 固定
@@ -619,7 +619,8 @@ function run(doScroll) {
     document.getElementById('conf').innerHTML = '';
     document.getElementById('note1').innerHTML =
       'ホールデータは未入力です(任意)。店の設定配分としては<b>市場全体の推定配分</b>を表示しています。'
-      + 'この台の設定はベルナビ回数で推定します(事前分布が「店の配分」のときだけ、ここの配分が事前として使われます)。';
+      + (hasNavi ? 'この台の設定はベルナビ回数で推定します(事前分布が「店の配分」のときだけ、ここの配分が事前として使われます)。'
+                 : 'ベルナビも未入力のため、期待値表は<b>市場全体の推定配分</b>で計算しています。');
   } else {
   const diff = (lamHall / MK.lam_obs - 1) * 100;
   document.getElementById('kpi1').innerHTML = [
