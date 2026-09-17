@@ -188,32 +188,31 @@
           <option value="sonota">朝イチ以外(前回あり)</option>
           <option value="asaichi">朝イチ</option>
         </select></div>
-      <div class="fld"><label>前回の連チャン</label>
+      <div class="fld"><label>① 前回が天井当選(1485G〜)</label>
+        <select id="segTJ">
+          <option value="0">いいえ</option>
+          <option value="1">はい(以下の項目は無効)</option>
+        </select></div>
+      <div class="fld"><label>② 前回に赤7(BB)</label>
+        <select id="segBB">
+          <option value="a">指定なし</option>
+          <option value="0">なし</option>
+          <option value="1">あり</option>
+        </select></div>
+      <div class="fld"><label>③ 前回の連チャン</label>
         <select id="segPrev">
           <option value="p1">単発</option>
           <option value="p2">2連</option>
           <option value="p3">3連</option>
           <option value="p4p">4連以上</option>
         </select></div>
-      <div class="fld"><label>前回に赤7(BB)</label>
-        <select id="segBB">
-          <option value="a">指定なし</option>
-          <option value="0">なし</option>
-          <option value="1">あり</option>
-        </select></div>
-      <div class="fld"><label>前回が天井当選(1485G〜)</label>
-        <select id="segTJ">
-          <option value="a">指定なし</option>
-          <option value="0">いいえ</option>
-          <option value="1">はい</option>
-        </select></div>
-      <div class="fld"><label>前々回(前回=1〜3連のときのみ)</label>
+      <div class="fld"><label>④ 前々回(前回=1〜3連のとき)</label>
         <select id="segPP" disabled>
           <option value="">指定なし</option>
           <option value="ppS">4連以上・赤7・天井</option>
           <option value="ppO">それ以外(1〜3連)</option>
         </select></div>
-      <div class="fld"><label>当日差枚(前回AT終了時)</label>
+      <div class="fld"><label>⑤ 当日差枚(前回AT終了時)</label>
         <select id="diffM">
           <option value="">考慮しない</option>
           <option value="0">〜+750枚</option>
@@ -354,6 +353,7 @@ let CURVE = CURVE_ALL();
 const PP_OK = ['p1', 'p2', 'p3'];   // 前々回を選べる前回区分
 function segKey() {
   if (document.getElementById('segTop').value === 'asaichi') return 'asaichi';
+  if (document.getElementById('segTJ').value === '1') return 'tenjo';   // 天井後は他の属性が効かない → 専用曲線
   const p = document.getElementById('segPrev').value;
   const pp = document.getElementById('segPP').value;
   return (PP_OK.includes(p) && pp) ? p + '_' + pp : p;
@@ -609,22 +609,23 @@ function run(doScroll) {
   const diffSel = diffRaw === '' ? -1 : +diffRaw;
   let diffBand = -1, diffKey = null, diffN = 0;
   DIFF_MULT = 1;
-  // --- 状況レイヤー(赤7・天井): 連数別の基準曲線に対する TY 倍率 ---
+  // --- 状況レイヤー: ①天井=はい なら天井後の実測曲線だけを使う(連数・赤7・前々回・差枚は天井後では効かない: F<2) ---
+  //     ①いいえ → ③連数別の基準曲線 × ②赤7セルの TY 倍率 × ⑤差枚の共通倍率
   const isAsa = segKey() === 'asaichi';
   const bbSel = document.getElementById('segBB').value, tjSel = document.getElementById('segTJ').value;
+  const isTJ = !isAsa && tjSel === '1';
   let stMult = 1, stCell = null;
-  if (!isAsa) { stCell = D.diff.state[document.getElementById('segPrev').value + '|' + bbSel + '|' + tjSel]; stMult = stCell.m; }
-  // --- 差枚レイヤー: 状況に依らない共通倍率。前回天井=はい のときは使わない ---
-  const diffOff = isAsa || tjSel === '1';
+  if (!isAsa && !isTJ) { stCell = D.diff.state[document.getElementById('segPrev').value + '|' + bbSel + '|0']; stMult = stCell.m; }
+  const diffOff = isAsa || isTJ;
   let dfMult = 1;
   if (diffSel >= 0 && !diffOff) { diffBand = diffSel; dfMult = D.diff.common[diffBand]; diffN = D.diff.n_common[diffBand]; }
   DIFF_MULT = stMult * dfMult;
-  const stTxt = (!isAsa && (bbSel !== 'a' || tjSel !== 'a'))
-    ? `赤7/天井レイヤー ×${stMult.toFixed(3)}(標本 ${stCell.n.toLocaleString()} 塊${stCell.src !== 'cell' ? '・天井プールで代用' : ''})` : '';
-  const dfTxt = diffBand >= 0 ? `差枚 ${D.diff.labels[diffBand]} ×${dfMult.toFixed(3)}(共通倍率)`
-    : (diffSel >= 0 ? (isAsa ? '朝イチでは差枚を使いません' : '前回天井=はい のときは差枚を使いません') : '');
-  document.getElementById('diffInfo').textContent = [stTxt, dfTxt].filter(Boolean).join(' / ')
-    + (stTxt && dfTxt && diffBand >= 0 ? ` → RUSH_TY 合計 ×${DIFF_MULT.toFixed(3)}` : '');
+  const stTxt = (stCell && (bbSel !== 'a' || Math.abs(stMult - 1) > 0.005))
+    ? `赤7レイヤー ×${stMult.toFixed(3)}(標本 ${stCell.n.toLocaleString()} 塊)` : '';
+  const dfTxt = diffBand >= 0 ? `差枚 ${D.diff.labels[diffBand]} ×${dfMult.toFixed(3)}(共通倍率)` : '';
+  document.getElementById('diffInfo').textContent = isTJ
+    ? '前回天井=はい: 天井後の実測曲線を使用(連数・赤7・前々回・差枚は天井後では効果が見られないため無効)'
+    : [stTxt, dfTxt].filter(Boolean).join(' / ') + (stTxt && dfTxt ? ` → RUSH_TY 合計 ×${DIFF_MULT.toFixed(3)}` : '');
   document.getElementById('segInfo').textContent =
     CURVE.n != null ? `この状況の解析サンプル: ${CURVE.n.toLocaleString()} 件` : '';
   const cur = buildCurves(baseKey, shortfall);
@@ -811,7 +812,8 @@ function run(doScroll) {
   const diffNote = diffBand >= 0
     ? `<b>当日差枚 ${D.diff.labels[diffBand]}</b>: 状況で調整した共通倍率 ×${dfMult.toFixed(3)} を RUSH_TY にだけ掛けています(標本 ${diffN.toLocaleString()} 塊)。<br>`
     : '';
-  const stNote = stTxt ? `<b>赤7/天井レイヤー</b>: 前回の連チャン数の基準曲線(赤7なし・天井なし)に対し、選択したセルの実測TY比 ×${stMult.toFixed(3)} を RUSH_TY に掛けています。<br>` : '';
+  const stNote = isTJ ? '<b>前回天井=はい</b>: 天井当選後の実測(初当り・TYとも専用曲線)をそのまま使っています。天井後は連数・赤7・前々回・差枚で次のTYが変わらない(約900枚で一定)ため、他の項目は無効です。<br>'
+    : (stTxt ? `<b>赤7レイヤー</b>: 前回の連チャン数の基準曲線(赤7なし・天井なし)に対し、選択したセルの実測TY比 ×${stMult.toFixed(3)} を RUSH_TY に掛けています。<br>` : '');
   document.getElementById('note4').innerHTML = stNote + diffNote + exNote + (rawMk
     ? `<b>生データ表示</b>: この状況の実測をそのまま評価した値です(設定配分・設定別の初当り/TY倍率・`
       + `TY不足補正・天井/引き戻しゾーンの分割は<b>一切使っていません</b>)。`
@@ -837,12 +839,13 @@ function run(doScroll) {
     この台のナビ観測 (k回 / G) の尤度を、店の配分を事前分布として掛けて事後確率を出します。
     基準ナビ率は各設定の実測 (n回 / G) から Gamma(n+½, G) の事後として扱い、負の二項分布で尤度を計算するので、
     標本の少ない設定ほど尤度がなだらかになります。朝イチ〜初当選の区間は全設定共通で約1/${D.navi.asaichi_den}と濃いため除外が前提です。<br><br>
-    <b>①'' 状況のレイヤー(連数 / 赤7 / 天井 / 前々回 / 差枚)</b><br>
-    前回の連チャン数・赤7の有無・天井当選かどうかは同じ塊で重なり得るので、別々のプルダウンにしています。
-    初当りと TY の基準曲線は<b>前回の連チャン数</b>(赤7なし・天井なしの実測)で決め、赤7・天井は
-    「連数×赤7×天井」のセルの実測TY ÷ 基準TY を倍率として RUSH_TY に掛けます(初当りはセル間でほぼ同じため据え置き)。
-    実測では、天井当選後は連数に関係なく次のTYが約900枚で頭打ち、赤7は単発ではほぼ効かず2連以上で効く、という形で、単純な足し算にはなりません。
-    標本500塊未満のセル(天井かつ赤7の1〜3連など)は天井全体の値で代用します。「指定なし」はその属性を問わない全体値です。<br><br>
+    <b>①'' 状況のレイヤー(効果の大きい順: 天井 → 赤7 → 連数 → 前々回 → 差枚)</b><br>
+    前回の天井当選・赤7・連チャン数は同じ塊で重なり得るので、別々のプルダウンにして効果の大きい順に並べています。
+    <b>① 天井=はい</b> のときは天井当選後の実測曲線だけを使い、他の項目は選べません。天井後の次のTYは約900枚で一定で、
+    連数(F=1.8)・赤7(0.2)・前々回(0.1)・差枚(1.1)のどれも有意な差が出ないためです。
+    <b>天井=いいえ</b> のときは、<b>③連数</b>別の実測曲線(赤7なし・天井なし)を基準に、<b>②赤7</b>は「連数×赤7」セルの実測TY ÷ 基準TY を倍率として RUSH_TY に掛けます
+    (赤7は単発ではほぼ効かず、2連以上で +13〜31%)。初当りはセル間でほぼ同じ(300G以内 42〜45%)なので据え置きです。
+    効果の大きさ(天井=いいえ の中でのTY水準差)は 赤7 38% / 連数 37% / 差枚 24% / 前々回 22% です。<br><br>
     <b>①''' 当日差枚 → RUSH_TY の倍率</b><br>
     当日の累積差枚(朝イチからの累計。解析では通常時を−1.62枚/Gで換算)を前回AT終了時点で評価し、
     帯 ${D.diff.labels.slice(0, 3).join(' / ')} に分けて(+2000超は有利区間が切れて恩恵を使い切った可能性が高いため選択肢から外しています)、各塊のTYを自分の状況(前回の連チャン型)の平均で割ってから帯ごとに平均した<b>共通倍率</b>(${D.diff.common.slice(0, 3).map(x => '×' + x.toFixed(2)).join(' / ')})を RUSH_TY に掛けます。状況の層と差枚の層を分けるためで、前回単発〜4連以上・赤7のどの状況でも帯の効果は共通値と誤差の範囲で一致します。
@@ -943,10 +946,12 @@ const selPrev = document.getElementById('segPrev');
 const selPP = document.getElementById('segPP');
 function onSegChange() {
   const asa = selTop.value === 'asaichi';
-  selPrev.disabled = asa;
-  selPP.disabled = asa || !PP_OK.includes(selPrev.value);
-  document.getElementById('segBB').disabled = asa;
+  const tjOn = document.getElementById('segTJ').value === '1';
   document.getElementById('segTJ').disabled = asa;
+  document.getElementById('segBB').disabled = asa || tjOn;
+  selPrev.disabled = asa || tjOn;
+  selPP.disabled = asa || tjOn || !PP_OK.includes(selPrev.value);
+  document.getElementById('diffM').disabled = asa || tjOn;
   if (selPP.disabled) selPP.value = '';
   if (!document.getElementById('out').classList.contains('hide')) run(false);  // その場に留まる
 }
