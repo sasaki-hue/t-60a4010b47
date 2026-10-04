@@ -193,18 +193,18 @@
           <option value="0">いいえ</option>
           <option value="1">はい(以下の項目は無効)</option>
         </select></div>
-      <div class="fld"><label>② 前回に赤7(BB)</label>
-        <select id="segBB">
-          <option value="a">指定なし</option>
-          <option value="0">なし</option>
-          <option value="1">あり</option>
-        </select></div>
-      <div class="fld"><label>③ 前回の連チャン</label>
+      <div class="fld"><label>② 前回の連チャン</label>
         <select id="segPrev">
           <option value="p1">単発</option>
           <option value="p2">2連</option>
           <option value="p3">3連</option>
           <option value="p4p">4連以上</option>
+        </select></div>
+      <div class="fld"><label>③ 前回に赤7(BB・2連以上で選択可)</label>
+        <select id="segBB">
+          <option value="a">指定なし</option>
+          <option value="0">なし</option>
+          <option value="1">あり</option>
         </select></div>
       <div class="fld"><label>④ 前々回(前回=1〜3連のとき)</label>
         <select id="segPP" disabled>
@@ -630,7 +630,7 @@ function run(doScroll) {
   let diffBand = -1, diffKey = null, diffN = 0;
   DIFF_MULT = 1;
   // --- 状況レイヤー: ①天井=はい なら天井後の実測曲線だけを使う(連数・赤7・前々回・差枚は天井後では効かない: F<2) ---
-  //     ①いいえ → ③連数別の基準曲線 × ②赤7セルの TY 倍率 × ⑤差枚の共通倍率
+  //     ①いいえ → ②連数別の基準曲線 × ③赤7セルの TY 倍率 × ⑤差枚の共通倍率
   const isAsa = segKey() === 'asaichi';
   const bbSel = document.getElementById('segBB').value, tjSel = document.getElementById('segTJ').value;
   const isTJ = !isAsa && tjSel === '1';
@@ -898,11 +898,11 @@ function run(doScroll) {
     この台のナビ観測 (k回 / G) の尤度を、店の配分を事前分布として掛けて事後確率を出します。
     基準ナビ率は各設定の実測 (n回 / G) から Gamma(n+½, G) の事後として扱い、負の二項分布で尤度を計算するので、
     標本の少ない設定ほど尤度がなだらかになります。朝イチ〜初当選の区間は全設定共通で約1/${D.navi.asaichi_den}と濃いため除外が前提です。<br><br>
-    <b>①'' 状況のレイヤー(効果の大きい順: 天井 → 赤7 → 連数 → 前々回 → 差枚)</b><br>
-    前回の天井当選・赤7・連チャン数は同じ塊で重なり得るので、別々のプルダウンにして効果の大きい順に並べています。
+    <b>①'' 状況のレイヤー(天井 → 連数 → 赤7 → 前々回 → 差枚)</b><br>
+    前回の天井当選・赤7・連チャン数は同じ塊で重なり得るので、別々のプルダウンにしています。赤7は連数が2連以上のときだけ選べるので、連数を先に選ぶ並びです。
     <b>① 天井=はい</b> のときは天井当選後の実測曲線だけを使い、他の項目は選べません。天井後の次のTYは約900枚で一定で、
     連数(F=1.8)・赤7(0.2)・前々回(0.1)・差枚(1.1)のどれも有意な差が出ないためです。
-    <b>天井=いいえ</b> のときは、<b>③連数</b>別の実測曲線(赤7なし・天井なし)を基準に、<b>②赤7</b>は「連数×赤7」セルの実測TY ÷ 基準TY を倍率として RUSH_TY に掛けます
+    <b>天井=いいえ</b> のときは、<b>②連数</b>別の実測曲線(赤7なし・天井なし)を基準に、<b>③赤7</b>は「連数×赤7」セルの実測TY ÷ 基準TY を倍率として RUSH_TY に掛けます
     (赤7の直後は必ず0GでGGに復帰するため「赤7ありの単発」は存在せず、単発では選べません。2連以上で +13〜31%)。通常のGGセットを「BB」信号で出力する一部の店(11店)は、集計時にBBをARTとして扱っています。初当りはセル間でほぼ同じ(300G以内 42〜45%)なので据え置きです。
     効果の大きさ(天井=いいえ の中でのTY水準差)は 赤7 38% / 連数 37% / 差枚 24% / 前々回 22% です。<br><br>
     <b>①''' 当日差枚 → RUSH_TY の倍率</b><br>
